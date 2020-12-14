@@ -1,0 +1,44 @@
+- hosts: localhost
+  tasks:
+  - name: Retrive Name of Docker Container
+    shell: "docker ps --format '{% raw %}{{ .Names }}{% endraw %}'"
+    register: Name
+
+
+  - name: Retreive Ip of Docker Container
+    shell: "docker inspect --format '{%raw %}{{ .NetworkSettings.IPAddress }}{% endraw %}' $(docker ps --format '{% raw %}{{ .Names }}{% endraw %}')"
+    register: IP
+
+  - name: Name of cont
+    debug:
+      var: Name.stdout
+
+  - name: IP of cont
+    debug:
+      var: IP.stdout
+
+  - name: upd inve
+    blockinfile:
+      path: /mydb/inventory.txt
+      block: |
+        {% raw %}[{% endraw %}{{ Name.stdout }}{%raw %}]{% endraw %}
+        {{ IP.stdout }} ansible_ssh_user=test ansible_ssh_pass=test
+
+
+# CONFIGURATION OF webserver(apache2)
+- hosts: NAME_OF_CONTAINER
+  become: yes
+  become_user: root
+  become_method: sudo
+
+  tasks:
+  - name: Installing webserver(apache2)
+    apt:
+      name: apache2
+      state: present
+
+
+  - name: Strating service
+    service:
+      name: apache2
+      state: started
